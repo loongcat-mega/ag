@@ -545,3 +545,237 @@ bool find(const T& val)noexcept
     }
 ```
 
+
+
+
+## 个人理解BST
+
+```cpp
+//
+// Created by dlut2102 on 2024/5/2.
+//
+//实现二叉搜索树的增删改查
+
+#include<iostream>
+#include<vector>
+#include <cassert>
+
+using namespace std;
+
+//模版类的声明
+template<class T>
+class BST;
+template<class T>
+class BSTNode;
+
+//使用别名
+template<class T>
+using bstptr= BSTNode<T>*;
+
+template<class T>
+class BSTNode
+{
+public:
+    T val;
+    bstptr<T> lc= nullptr;
+    bstptr<T> rc= nullptr;
+    //BSTNode(const T&val_):val(val_){}
+    ~BSTNode()
+    {
+        if(lc== nullptr)
+        {
+            delete lc;
+            lc= nullptr;
+        }
+        if(rc== nullptr)
+        {
+            delete rc;
+            rc= nullptr;
+        }
+    }
+};
+
+template<class T>
+class BST
+{
+public:
+    bstptr<T> root= nullptr;
+    //插入
+    void insert(const T&val);
+    //删除
+    void remove(const T&val);
+    void removeByCopying(bstptr<T>& now);
+    //查找
+    bool find(const T&val);
+    //遍历
+    void inOrder(bstptr<T>now);
+    void preOrder(bstptr<T>now);
+    void postOrder(bstptr<T>now);
+};
+
+template<class T>
+void BST<T>::postOrder(bstptr<T> now) 
+{
+    if(now!= nullptr)
+    {
+        postOrder(now->lc);
+        postOrder(now->rc);
+        cout<<now->val<<" ";
+
+    }
+}
+
+template<class T>
+void BST<T>::preOrder(bstptr<T> now) 
+{
+    if(now!= nullptr)
+    {
+        cout<<now->val<<" ";
+        preOrder(now->lc);
+        preOrder(now->rc);
+
+    }
+}
+
+template<class T>
+void BST<T>::inOrder(bstptr<T> now)
+{
+    if(now!= nullptr)
+    {
+        inOrder(now->lc);
+        cout<<now->val<<" ";
+        inOrder(now->rc);
+
+    }
+}
+
+template<class T>
+bool BST<T>::find(const T &val) {
+    return false;
+}
+
+template<class T>
+void BST<T>::insert(const T &val) 
+{
+    if(root== nullptr)
+    {
+        root=new BSTNode<T>{val};
+        return;
+    }
+    bstptr<T> now=root;
+    bstptr<T> prev= nullptr;
+    while(now!= nullptr && now->val!=val)
+    {
+        prev=now;
+        if(val> now->val)
+            now=now->rc;
+        else
+            now=now->lc;
+    }
+    //这里用val来比较，是因为now为空了，没法判断now是prev是左右孩子
+    if( now == nullptr)
+        val>prev->val?prev->rc=new BSTNode<T>{val}:prev->lc=new BSTNode<T>{val};
+    
+}
+template<class T>
+void BST<T>::remove(const T &val)
+{
+    bstptr<T> now=root;
+    bstptr<T> prev= nullptr;
+    
+    while( now != nullptr && now->val != val)
+    {
+        prev=now;
+        if(val>now->val)
+            now=now->rc;
+        else
+            now=now->lc;
+    }
+    //now非空说明找到了
+    //此时可以用now判断now是prev的左孩子还是右孩子
+    //这里并没有传参now，而是其父指针
+    //个人理解 now 是无头有尾指针
+    //而 prev->lc/rc 是有头有尾指针
+    //按引用传递，修改now 不会对prev有影响，而下面则会有影响
+    if(now != nullptr)
+        removeByCopying(prev->lc==now?prev->lc:prev->rc);
+}
+template<class T>
+void BST<T>::removeByCopying(bstptr<T>& now) 
+{
+    //now为要删除的结点其父指针
+    bstptr<T> tmp=now;
+    bstptr<T>  prev=now;
+    //assert(typeid(tmp).name==typeid(prev).name);
+    //如果被删除结点没有左子树，直接指针往右子树走
+    if(now->lc== nullptr)
+        now=now->rc;
+    //如果没有右子树，往左子树走
+    else if(now->rc== nullptr)
+        now=now->lc;
+    //既有左子树 又有右子树
+    //采用复制删除方法，把要删除结点左子树最大值拷贝过来，然后删除左子树最大值
+    else
+    {
+        tmp=tmp->lc;
+        while(tmp->rc != nullptr)
+        {
+            prev=tmp;
+            tmp=tmp->rc;
+        }
+        //此时一定走到了左子树最大值位置
+        now->val=tmp->val;
+        //拷贝完成，删除左子树最大值结点
+        
+        //最大值结点就是now的左子树
+        if(prev==now)
+            prev->lc=tmp->lc;
+        //最大值结点 其父节点 被删除结点 是三个不同节点
+        else
+            prev->rc=tmp->lc;
+    }
+    delete tmp;
+    tmp= nullptr;
+}
+#define RMLOG(STR)  tr.remove(STR);\
+                    cout<<"删除"<<STR<<"后:"<<endl; \
+                    tr.inOrder(tr.root);\
+                    cout<<endl;
+int main()
+{
+    
+    BST<int>tr;
+//    int n,t;
+//    cin>>n;
+//    while(n--)
+//    {
+//        cin>>t;
+//        tr.insert(t);
+//    }
+    vector<int>vals{1,6,5 ,9, 8};
+    for(auto ele:vals)
+        tr.insert(ele);
+    
+    tr.preOrder(tr.root);
+    cout<<endl;
+    tr.inOrder(tr.root);
+    cout<<endl;
+    
+    tr.postOrder(tr.root);
+    cout<<endl;
+//
+    //tr.remove(8);
+
+    RMLOG(7)
+    RMLOG(5)
+    RMLOG(6)
+    RMLOG(7)
+    return 0;
+}
+```
+
+几个要注意的点
+- 是不是要now为空？如果是，就得需要其父节点
+- 类内成员变量是否初始化？
+- 值传参与引用传参，需不需要参数进行变动
+
